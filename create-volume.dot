@@ -1,4 +1,4 @@
-digraph SO {
+digraph create_volume {
     splines = false;
     node [shape=record];
     { rank = same;
