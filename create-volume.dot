@@ -1,0 +1,68 @@
+digraph SO {
+    splines = false;
+    node [shape=record];
+    { rank = same;
+      cl[label="client"];
+      na[label="{nova-api-os-volume |{<na> nova.api|<va> nova.volume.api}}"];
+      ns[label="nova-scheduler"];
+      nv[label="{nova-volume | {<vm> nova.volume.manager|<vd> nova.volume.driver}}"];
+      os[label="OS"];
+      cl -> na -> ns -> nv -> os [style=invisible,arrowhead=none];
+    }
+    
+    node [shape=point];
+    edge[constraint=false];
+    ranksep=0.1;
+    cl1[shape=box,label="nova create-volume"];
+    { rank=same;
+        cl2 -> na1[label="POST to /volumes/"];
+        na1 -> va1[label="volume_api.create()"];
+    }
+    va2[shape=box,label="do all policy and quota checks"];
+    { rank=same;
+        va3 -> ns1[style=dashed,label="cast create_volume method"];
+    }
+    { rank=same; edge[dir=back];
+        va4 -> na2[label="db volume instance"];
+        na2 -> cl3[label="200 OK with volume details"];
+    }
+    ns2[shape=box,label="select arpopriate nova-volume node"];
+    { rank=same; edge[dir=back];
+        ns3 -> vm1[style=dashed,label="cast create_volume method"];
+    }
+    // nova.volume.manager.VolumeManager.create_volume
+    vm2[shape=box,label="bind volume to host"]
+    { rank=same;
+        vm3 -> vd1[label="create_volume()"];
+    }
+    vm5[shape=box,label="update DB if necessary"];
+    { rank=same;
+        vm6 -> vd4[label="create_export()"];
+    }
+    vm8[shape=box,label="update DB if necessary"];
+    // nova.volume.driver.ISCSIDriver
+    { rank=same;
+        os1[shape=box,label="lvcreate"];
+        vd2 -> os1[dir=both];
+    }
+    { rank=same; edge[dir=back];
+        vd3 -> vm4[label="volume DB update\n(empty for LVM)",style=dotted]
+    }
+    vd5[shape=box,label="allocate iSCSI target in DB\nprepare iSCSI properties"];
+    { rank=same;
+        os2[shape=box,label="new target\nnew LUN"];
+        vd6 -> os2[dir=both];
+    }
+    { rank=same; edge[dir=back];
+        vd7 -> vm7[label="provider_location"];
+    }
+
+    edge [arrowhead=none,constraint=true]
+    cl -> cl1 -> cl2 -> cl3;
+    na:na -> na1 -> na2;
+    na:va -> va1 -> va2 -> va3 -> va4;
+    ns -> ns1 -> ns2 -> ns3;
+    nv:vm -> vm1 -> vm2 -> vm3 -> vm4 -> vm5 -> vm6 -> vm7 -> vm8;
+    nv:vd -> vd1 -> vd2 -> vd3 -> vd4 -> vd5 -> vd6 -> vd7;
+    os -> os1 -> os2;
+}
