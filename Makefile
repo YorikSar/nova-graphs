@@ -8,7 +8,7 @@ page: $(work_dir)/index.html
 git: page
 	cd $(work_dir);\
 		if [ "$$(git status -s)" ]; then \
-			git commit -am "Update to master branch" && git push; \
+			git add . && git commit -m "Update to master branch" && git push \
 		fi
 
 clean:
