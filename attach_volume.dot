@@ -1,0 +1,105 @@
+digraph create_volume {
+    splines = false;
+    node [shape=record];
+    { rank = same;
+      cl[label="client"];
+      na[label="{nova-api-os-compute |{<na> nova.api|<ca> nova.compute.api|<va> nova.volume.api}}"];
+      nc[label="{nova-compute | {<cm> nova.compute.manager|<cd> nova.compute.driver|<va> nova.volume.api}}"];
+      nv[label="{nova-volume | {<vm> nova.volume.manager|<vd> nova.volume.driver}}"];
+      cl -> na -> nc -> nv [style=invisible,arrowhead=none];
+    }
+    
+    node [shape=point];
+    edge[constraint=false];
+    ranksep=0.1;
+    
+    cl1[shape=box,label="nova attach-volume"];
+    { rank=same;
+        cl1 -> na1[label="POST to /os-volume_attachements"];
+        na1 -> ca1[label="attach_volume()"];
+    } 
+    { rank=same; edge[dir=back];
+        na2 -> cl2[label="200 OK (no useful info here)"];
+    }
+
+    { rank=same;
+        ca2 -> va1[label="check_attach()"];
+    }
+    { rank=same;
+        ca4 -> va4[label="reserve_volume()"];
+    }
+    { rank=same;
+        ca6 -> cm1[label="cast attach_volume method",style=dashed];
+    }
+    { rank=same;
+        ca7 -> na2;
+    }
+
+    va2[shape=box,label="assert volume status"];
+    { rank=same;
+        va3 -> ca3;
+    }
+    va5[shape=box,label="mark volume as attaching"];
+    { rank=same;
+        va6 -> ca5;
+    }
+    
+    { rank=same;
+        cm2 -> cd1[label="get_volume_connector()\n(initiator and node's IP)",dir=both];
+    }
+    { rank=same;
+        cm3 -> vac1[label="initialize_connection()"];
+    }
+    { rank=same;
+        cm5 -> cd2[label="attach_volume()"];
+    }
+    { rank=same;
+        cm7 -> vac3[label="attach()"];
+    }
+    cm9[shape=box,label="create block_device_mapping"];
+
+    cd3[shape=box,label="attach volume to VM\nusing connection_info"];
+    { rank=same;
+        cd4 -> cm6;
+    }
+
+    { rank=same;
+        vac1 -> vm1[label="call initialize_connection method",style=dashed];
+    }
+    { rank=same; edge[dir=back];
+        vac2 -> cm4[label="connection_info"];
+    }
+    { rank=same;
+        vac3 -> vm3[label="call attach_volume method",style=dashed];
+    }
+    { rank=same;
+        vac4 -> cm8;
+    }
+
+    { rank=same;
+        vm1 -> vd1[label="initialize_connection"];
+    }
+    { rank=same; edge[dir=back];
+        vm2 -> vac2[label="connection_info",style=dashed];
+    }
+    vm4[shape=box,label="mark volume as attached"];
+    { rank=same;
+        vm5 -> vac4[style=dashed];
+    }
+
+    vd2[shape=box,label="form connection_info\n(iscsi, rbd or sheepdog + target spec)"];
+    { rank=same; edge[dir=back];
+        vd3 -> vm2[label="connection_info"];
+    }
+
+    edge [arrowhead=none,constraint=true]
+    cl -> cl1 -> cl2;
+    na:na -> na1 -> na2;
+    na:ca -> ca1 -> ca2 -> ca3 -> ca4 -> ca5 -> ca6 -> ca7;
+    na:va -> va1 -> va2 -> va3 -> va4 -> va5 -> va6;
+    nc:cm -> cm1 -> cm2 -> cm3 -> cm4 -> cm5 -> cm6 -> cm7 -> cm8 -> cm9;
+    nc:cd -> cd1 -> cd2 -> cd3 -> cd4;
+    nc:va -> vac1 -> vac2 -> vac3 -> vac4;
+    nv:vm -> vm1 -> vm2 -> vm3 -> vm4 -> vm5;
+    nv:vd -> vd1 -> vd2 -> vd3;
+}
